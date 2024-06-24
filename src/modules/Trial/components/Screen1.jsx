@@ -244,8 +244,7 @@ const Screen1 = ({ onScroll, setShow, show }) => {
     ScrollTrigger.observe({
       trigger: container.current,
       type: "scroll",
-      start: "top top",
-      end: "bottom top",
+
       once: true,
       onUp: () => {
         if (!hasAnimated) {

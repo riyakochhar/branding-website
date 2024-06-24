@@ -49,9 +49,7 @@ const Trial = () => {
   useEffect(() => {
     ScrollTrigger.observe({
       trigger: container.current,
-      start: "top top",
-      end: "bottom top",
-      type: "scroll",
+      type: "wheel",
       once: true,
       onDown: () => {
         console.log("hit ");
