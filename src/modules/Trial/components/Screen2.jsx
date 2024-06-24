@@ -40,7 +40,7 @@ const Screen2 = ({ show, setShow }) => {
           ease: "power2.inOut",
           onComplete: () => {
             gsap.fromTo(
-              Array.from(textContainerRef.current.children).slice(1),
+              Array.from(textContainerRef?.current?.children || []).slice(1),
               { opacity: 0, y: 0 },
               {
                 opacity: 1,

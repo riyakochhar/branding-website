@@ -323,7 +323,7 @@ const Home = () => {
               backgroundImage:
                 'url("https://img.crofarm.com/crofarmweb/branding/bg-1.png")',
               backgroundSize: "cover",
-              height: "100vh", // Adjust height as needed
+              minHeight: "100vh", // Adjust height as needed
             }}
           >
             h2

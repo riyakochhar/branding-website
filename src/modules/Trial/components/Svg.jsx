@@ -1270,7 +1270,7 @@ const Svg = () => {
             variants={pathVariants}
             d="M203.33 35.13C203.33 35.13 149.3 72.59 160.67 51.31C172.04 30.03 173.91 56.87 126.06 68.83C78.22 80.78 82.02 32.89 82.02 32.89"
             stroke="white"
-            stroke-miterlimit="10"
+            strokeMiterlimit="10"
           />
           <motion.path
             variants={pathVariants}

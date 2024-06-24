@@ -1,99 +1,92 @@
-// import React, { useState } from "react";
-// import styles from "./css/style.module.css";
-// import Screen1 from "./components/Screen1";
-// import Screen2 from "./components/Screen2";
-
-// const Trial = () => {
-//   const [showScreen2, setShowScreen2] = useState(false);
-//   const [show, setShow] = useState(false);
-
-//   const handleScroll = () => {
-//     setShowScreen2(true);
-//   };
-
-//   return (
-//     <section className={styles.section}>
-//       {!showScreen2 ? (
-//         <Screen1 onScroll={handleScroll} show={show} setShow={setShow} />
-//       ) : (
-//         <Screen2 show={show} setShow={setShow} />
-//       )}
-//     </section>
-//   );
-// };
-
-// export default Trial;
-
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { Observer } from "gsap/Observer";
 import styles from "./css/style.module.css";
 import Screen1 from "./components/Screen1";
 import Screen2 from "./components/Screen2";
-import { useRef, useEffect } from "react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import gsap from "gsap";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const Trial = () => {
-  const [showScreen2, setShowScreen2] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
-
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const containerRef = useRef(null);
+  const section1Ref = useRef(null);
+  const section2Ref = useRef(null);
+  const headingsRef = useRef([]); // Array to store SplitText instances
   const [show, setShow] = useState(false);
-  const container = useRef();
-  const textContainerRef = useRef();
 
-  const handleScroll = () => {
-    setShowScreen2(true);
-  };
+  const sections = document.querySelectorAll("section");
+  const images = document.querySelectorAll(".bg");
+  const outerWrappers = gsap.utils.toArray(".outer");
+  const innerWrappers = gsap.utils.toArray(".inner");
+
+  headingsRef.current = gsap.utils.toArray(".section-heading").map(
+    (heading) =>
+      new SplitText(heading, {
+        type: "chars,words,lines",
+        linesClass: "clip-text",
+      })
+  );
+
+  const wrap = gsap.utils.wrap(0, sections.length);
 
   useEffect(() => {
-    ScrollTrigger.observe({
-      trigger: container.current,
-      start: "top top",
-      end: "bottom top",
-      type: "scroll",
-      once: true,
-      onDown: () => {
-        console.log("hit ");
-      },
-      onUp: () => {
-        if (!hasAnimated) {
-          setHasAnimated(true);
-
-          // Fade out clouds and text
-          gsap.to(`.${styles.cloud_img}`, {
-            opacity: 0,
-            duration: 2,
-            ease: "power2.inOut",
-          });
-
-          gsap.to(textContainerRef.current, {
-            opacity: 0,
-            duration: 1,
-            ease: "power2.inOut",
-            onComplete: () => {
-              handleScroll();
-            },
-          });
-        }
-      },
+    const observer = Observer.create({
+      trigger: containerRef.current,
+      type: "wheel,touch,pointer",
+      wheelSpeed: -1,
+      tolerance: 10,
+      preventDefault: true,
+      onDown: () => !animating && gotoSection(0, -1),
+      onUp: () => !animating && gotoSection(1, 1),
     });
+
+    return () => observer.kill(); // Cleanup observer on unmount
   }, []);
 
+  const gotoSection = (index, direction) => {
+    if (index === 1) {
+      gsap.to(section2Ref.current, {
+        y: "0%",
+        duration: 1,
+        ease: "power2.inOut",
+        onComplete: () => {
+          gsap.to(section1Ref.current, {
+            y: "-100%",
+            duration: 1,
+            ease: "power2.inOut",
+            onComplete: () => {},
+          });
+        },
+      });
+    } else {
+      gsap.to(section1Ref.current, {
+        y: "0%",
+        duration: 1,
+        ease: "power2.inOut",
+        onComplete: () => {
+          gsap.to(section2Ref.current, {
+            y: "100%",
+            duration: 1,
+            ease: "power2.inOut",
+            onComplete: () => {},
+          });
+        },
+      });
+    }
+
+    setCurrentIndex(index);
+  };
+
   return (
-    <section ref={container} className={styles.contents}>
-      {!showScreen2 ? (
-        <Screen1
-          onScroll={handleScroll}
-          show={show}
-          setShow={setShow}
-          textContainerRef={textContainerRef}
-          container={container}
-          hasAnimated={hasAnimated}
-          setHasAnimated={setHasAnimated}
-        />
+    <section ref={containerRef} className={styles.contents}>
+      {currentIndex === 0 ? (
+        <section ref={section1Ref}>
+          <Screen1 show={show} setShow={setShow} />
+        </section>
       ) : (
-        <Screen2 show={show} setShow={setShow} />
+        <section ref={section2Ref}>
+          <Screen2 show={show} setShow={setShow} />
+        </section>
       )}
     </section>
   );
