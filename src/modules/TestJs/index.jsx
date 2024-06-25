@@ -52,8 +52,9 @@ const TestJs = () => {
   const headingsRef = useRef([]);
   const outerWrappersRef = useRef([]);
   const innerWrappersRef = useRef([]);
-  const currentIndexRef = useRef(-1);
-
+  const currentIndexRef = useRef(0);
+  const animatedRef = useRef(false);
+  
   useEffect(() => {
     const sections = sectionsRef.current;
     const images = imagesRef.current;
@@ -61,63 +62,78 @@ const TestJs = () => {
     const outerWrappers = outerWrappersRef.current;
     const innerWrappers = innerWrappersRef.current;
     const wrap = gsap.utils.wrap(0, sections.length);
-    let animating = false;
 
     gsap.set(outerWrappers, { yPercent: 100 });
     gsap.set(innerWrappers, { yPercent: -100 });
     gsap.set(sections[0], { autoAlpha: 1 }); // Set the first section's autoAlpha to 1
 
     const gotoSection = (index, direction) => {
-      if (animating) return;
+      if (animatedRef?.current) return;
       index = wrap(index);
-      animating = true;
+      animatedRef.current = true;
       const fromTop = direction === -1;
       const dFactor = fromTop ? -1 : 1;
       const tl = gsap.timeline({
         defaults: { duration: 1.25, ease: "power1.inOut" },
-        onComplete: () => {
-          animating = false;
-        },
       });
+
       if (currentIndexRef.current >= 0) {
         gsap.set(sections[currentIndexRef.current], { zIndex: 0 });
         tl.to(images[currentIndexRef.current], { yPercent: -15 * dFactor }).set(
           sections[currentIndexRef.current],
-          { autoAlpha: 0 }
+          { autoAlpha: 1 }
         );
       }
+
       gsap.set(sections[index], { autoAlpha: 1, zIndex: 1 });
-      tl.fromTo(
-        [outerWrappers[index], innerWrappers[index]],
-        { yPercent: (i) => (i ? -100 * dFactor : 100 * dFactor) },
-        { yPercent: 0 },
-        0
-      )
+      const timeline = tl
+        .fromTo(
+          [outerWrappers[index], innerWrappers[index]],
+          { yPercent: (i) => (i ? -100 * dFactor : 100 * dFactor) },
+          { yPercent: 0 },
+          0
+        )
         .fromTo(images[index], { yPercent: 15 * dFactor }, { yPercent: 0 }, 0)
         .fromTo(
           Array.from(headings[index].querySelectorAll(`.${styles.char}`)),
-          { autoAlpha: 0, yPercent: 150 * dFactor },
+          { autoAlpha: 1, yPercent: 150 * dFactor },
           {
             autoAlpha: 1,
             yPercent: 0,
             duration: 1,
             ease: "power2",
-            stagger: {
-              each: 0.02,
-              from: "random",
-            },
+            // stagger: {
+            //   each: 0.02,
+            // },
           },
           0.2
         );
 
-      currentIndexRef.current = index;
+      timeline.eventCallback("onComplete", () => {
+        console.log("animated", index);
+        currentIndexRef.current = index;
+        animatedRef.current = false;
+        timeline.kill(); // Destroy the animation timeline
+      });
     };
 
     Observer.create({
       type: "wheel,touch,pointer",
       wheelSpeed: 1,
-      onDown: () => gotoSection(currentIndexRef.current + 1, 1),
-      onUp: () => gotoSection(currentIndexRef.current - 1, -1),
+      onUp: () => {
+        if (!animatedRef?.current && currentIndexRef.current > 0) {
+          gotoSection(currentIndexRef.current - 1, -1);
+        }
+      },
+      onDown: () => {
+        if (
+          !animatedRef?.current &&
+          currentIndexRef.current < sectionsRef.current.length - 1
+        ) {
+          gotoSection(currentIndexRef.current + 1, 1);
+        }
+      },
+
       tolerance: 10,
       preventDefault: true,
     });
@@ -127,10 +143,6 @@ const TestJs = () => {
 
   return (
     <div>
-      <header>
-        <a href="#">Logo</a>
-        <a href="#">Menu</a>
-      </header>
       {sectionsData.map((section, index) => (
         <div
           key={index}
